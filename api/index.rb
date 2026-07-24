@@ -14,8 +14,14 @@ Handler = Proc.new do |request, response|
 
   # Jika diakses via POST (dari bot Node.js)
   begin
-    body_content = request.body.read
-    request_payload = JSON.parse(body_content) rescue {}
+    # Tangani request.body apakah berupa String atau objek Stream
+    raw_body = if request.body.respond_to?(:read)
+                 request.body.read
+               else
+                 request.body.to_s
+               end
+
+    request_payload = JSON.parse(raw_body) rescue {}
     prompt = request_payload['prompt']
 
     if prompt.nil? || prompt.strip.empty?
@@ -24,7 +30,7 @@ Handler = Proc.new do |request, response|
       next
     end
 
-    groq_api_key = ENV['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']
+    groq_api_key = ENV['GROQ_API_KEY']
     unless groq_api_key
       response.status = 500
       response.body = { error: 'Groq API Key belum disetting di Environment Variables Vercel!' }.to_json
